@@ -1,7 +1,21 @@
-// To UnZip the File
+// To UnZip the File  
 tar -xvjf ns-allinone-3.26.tar.bz2
 
 // Dependecies
 sudo apt-get install gcc g++ python python-dev mercurial bzr gdb valgrind gsl-bin libgsl0-dev flex bison tcpdump sqlite sqlite3 libsqlite3-dev libxml2 libxml2-dev libgtk2.0-0 libgtk2.0-dev uncrustify doxygen graphviz imagemagick texlive texlive-latex-extra texlive-generic-extra texlive-generic-recommended texinfo dia texlive texlive-latex-extra texlive-extra-utils texlive-generic-recommended texi2html python-pygraphviz python-kiwi python-pygoocanvas libgoocanvas-dev python-pygccxml
 
+// Execute it in ns-allinone-3.26 directory
 ./build.py --enable-examples --enable-tests
+
+// Download Visual Studio Code from following link
+https://code.visualstudio.com/docs/?dv=linux64
+
+// Setup Path in Visual Code for NS3
+// 1. Open Visual Studio Code
+// 2. Click on Extensions Tab (Usually Present on Left Side)
+// 3. Search for C/C++ and Install the one From "Microsoft"
+// 4. After Installation Restart Visual Studio Code
+// 5. GoTo File -> Preferences  -> Settings
+// 6. Search for 'C_Cpp.default.includePath' and click Edit
+// 7. Replace the setting with following
+"C_Cpp.default.includePath": ["<Absolute-Path-To-ns3-Directory>/ns-allinone-3.26/ns-3.26/build"],

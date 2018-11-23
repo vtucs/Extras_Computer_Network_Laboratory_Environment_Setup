@@ -16,28 +16,17 @@ class MobileApplicationHelper
     NodeContainer &m_enbNodes;
     NodeContainer &m_ueNodes;
     u_int16_t m_numberOfNodes;
-    Ptr<Node> &m_remoteHost;
     Ipv4InterfaceContainer ueIpIface;
-    Ipv4StaticRoutingHelper ipv4RoutingHelper;
-    Ipv4Address remoteHostAddr;
 
   public:
-    MobileApplicationHelper(NodeContainer &enbNodes, NodeContainer &ueNodes, u_int16_t numberOfNodes, Ptr<Node> &remoteHost, NetDeviceContainer &internetDevices);
+    MobileApplicationHelper(NodeContainer &enbNodes, NodeContainer &ueNodes, u_int16_t numberOfNodes);
     void SetupMobilityModule(double distance);
-    void SetupDevices(Ptr<LteHelper> &lteHelper, Ptr<PointToPointEpcHelper> &epcHelper);
-    void SetupApplications(ApplicationContainer &serverApps, ApplicationContainer &clientApps, int16_t ulPort, int16_t dlPort, int16_t otherPort, double interPacketInterval);
+    void SetupDevices(Ptr<LteHelper> &lteHelper, Ptr<PointToPointEpcHelper> &epcHelper, Ipv4StaticRoutingHelper ipv4RoutingHelper);
+    void SetupApplications(ApplicationContainer &serverApps, ApplicationContainer &clientApps, Ptr<Node> &remoteHost, Ipv4Address &remoteHostAddr, int16_t ulPort, int16_t dlPort, int16_t otherPort, double interPacketInterval);
 };
 
-MobileApplicationHelper::MobileApplicationHelper(NodeContainer &enbNodes, NodeContainer &ueNodes, u_int16_t numberOfNodes, Ptr<Node> &remoteHost, NetDeviceContainer &internetDevices) : m_enbNodes(enbNodes), m_ueNodes(ueNodes), m_numberOfNodes(numberOfNodes), m_remoteHost(remoteHost)
+MobileApplicationHelper::MobileApplicationHelper(NodeContainer &enbNodes, NodeContainer &ueNodes, u_int16_t numberOfNodes) : m_enbNodes(enbNodes), m_ueNodes(ueNodes), m_numberOfNodes(numberOfNodes)
 {
-    Ptr<Ipv4StaticRouting> remoteHostStaticRouting =
-        ipv4RoutingHelper.GetStaticRouting(m_remoteHost->GetObject<Ipv4>());
-    remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), 1);
-
-    Ipv4AddressHelper ipv4h;
-    ipv4h.SetBase("1.0.0.0", "255.0.0.0");
-    Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign(internetDevices);
-    remoteHostAddr = internetIpIfaces.GetAddress(1);
 }
 
 void MobileApplicationHelper::SetupMobilityModule(double distance)
@@ -54,7 +43,7 @@ void MobileApplicationHelper::SetupMobilityModule(double distance)
     mobility.Install(m_ueNodes);
 }
 
-void MobileApplicationHelper::SetupDevices(Ptr<LteHelper> &lteHelper, Ptr<PointToPointEpcHelper> &epcHelper)
+void MobileApplicationHelper::SetupDevices(Ptr<LteHelper> &lteHelper, Ptr<PointToPointEpcHelper> &epcHelper, Ipv4StaticRoutingHelper ipv4RoutingHelper)
 {
     NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice(m_enbNodes);
     NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice(m_ueNodes);
@@ -78,7 +67,7 @@ void MobileApplicationHelper::SetupDevices(Ptr<LteHelper> &lteHelper, Ptr<PointT
     }
 }
 
-void MobileApplicationHelper::SetupApplications(ApplicationContainer &serverApps, ApplicationContainer &clientApps, int16_t ulPort, int16_t dlPort, int16_t otherPort, double interPacketInterval)
+void MobileApplicationHelper::SetupApplications(ApplicationContainer &serverApps, ApplicationContainer &clientApps, Ptr<Node> &remoteHost, Ipv4Address &remoteHostAddr, int16_t ulPort, int16_t dlPort, int16_t otherPort, double interPacketInterval)
 {
     for (uint32_t u = 0; u < m_ueNodes.GetN(); ++u)
     {
@@ -91,7 +80,7 @@ void MobileApplicationHelper::SetupApplications(ApplicationContainer &serverApps
         PacketSinkHelper packetSinkHelper("ns3::UdpSocketFactory",
                                           InetSocketAddress(Ipv4Address::GetAny(), otherPort));
         serverApps.Add(dlPacketSinkHelper.Install(m_ueNodes.Get(u)));
-        serverApps.Add(ulPacketSinkHelper.Install(m_remoteHost));
+        serverApps.Add(ulPacketSinkHelper.Install(remoteHost));
         serverApps.Add(packetSinkHelper.Install(m_ueNodes.Get(u)));
         UdpClientHelper dlClient(ueIpIface.GetAddress(u), dlPort);
         dlClient.SetAttribute("Interval", TimeValue(MilliSeconds(interPacketInterval)));
@@ -102,7 +91,7 @@ void MobileApplicationHelper::SetupApplications(ApplicationContainer &serverApps
         UdpClientHelper client(ueIpIface.GetAddress(u), otherPort);
         client.SetAttribute("Interval", TimeValue(MilliSeconds(interPacketInterval)));
         client.SetAttribute("MaxPackets", UintegerValue(1000000));
-        clientApps.Add(dlClient.Install(m_remoteHost));
+        clientApps.Add(dlClient.Install(remoteHost));
         clientApps.Add(ulClient.Install(m_ueNodes.Get(u)));
         if (u + 1 < m_ueNodes.GetN())
         {
